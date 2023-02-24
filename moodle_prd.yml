@@ -1,0 +1,54 @@
+---
+version: "3.8"
+
+services:
+  prd_nginx:
+    depends_on: [prd_moodle_db, prd_moodle]
+    image: "nginx:1.21.1"
+    restart: "always"
+    ports:
+      - "80:80"
+      - "8443:8443"
+    volumes:
+      - "./prd_nginx/nginx.conf:/etc/nginx/nginx.conf"
+      - "./prd_nginx/conf.d:/etc/nginx/conf.d"
+    networks:
+      - "prd"
+
+
+  prd_moodle:
+    depends_on: [prd_moodle_db]
+    image: "bitnami/moodle:3.10.4-debian-10-r6"
+    restart: "always"
+    volumes:
+      - "/var/moodle/prd_data/moodledata:/bitnami/moodledata"
+      - "/var/moodle/prd_data/moodle:/bitnami/moodle"
+    environment:
+      - TZ=America/Manaus
+      - MOODLE_DATABASE_HOST=prd_moodle_db
+      - MOODLE_DATABASE_USER=moodle
+      - MOODLE_DATABASE_PASSWORD=Secret#123
+      - MOODLE_DATABASE_NAME=moodle
+      - BITNAMI_DEBUG=true
+      - PHP_POST_MAX_SIZE=0
+      - PHP_UPLOAD_MAX_FILESIZE=1000M
+      - PHP_MAX_EXECUTION_TIME=0
+    networks:
+      - "prd"
+
+
+  prd_moodle_db:
+    image: "mariadb:10.3"
+    restart: "always"
+    volumes:
+      - "/var/moodle/prd_data/database:/var/lib/mysql"
+    environment:
+      - MYSQL_ROOT_PASSWORD=Secret#123
+      - MYSQL_USER=moodle
+      - MYSQL_PASSWORD=Secret#123
+      - MYSQL_DATABASE=moodle
+    networks:
+      - "prd"
+
+networks:
+  prd:
